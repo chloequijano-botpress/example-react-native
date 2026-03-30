@@ -3,7 +3,7 @@
  */
 import { WebView } from "react-native-webview";
 import getBotpressWebchat from "./getBotpressWebchat";
-import React, { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 
 const broadcastToRn = `
 (function () {
@@ -66,10 +66,9 @@ function isBotpressMarketingSiteUrl(url) {
   }
 }
 
-const BpWidget = forwardRef((props, ref) => {
-  const webref = useRef();
-
+export default function BpWidget(props) {
   const { botConfig, onMessage } = props;
+  const webref = useRef(null);
 
   const { html, baseUrl } = getBotpressWebchat(botConfig);
 
@@ -81,57 +80,6 @@ const BpWidget = forwardRef((props, ref) => {
     }
     return true;
   }, []);
-
-  const invokeBotpressMethod = (method, ...args) => {
-    if (!webref.current) {
-      throw new Error("Webview must be loaded to run commands");
-    }
-    const payload = { method, args };
-    const run = `
-(function () {
-  try {
-    if (!window.botpress) return;
-    var p = ${JSON.stringify(payload)};
-    if (p.method === "sendEvent") {
-      var ev = p.args[0];
-      if (ev && ev.type === "toggle") {
-        if (typeof window.botpress.toggle === "function") window.botpress.toggle();
-      } else {
-        window.botpress.sendEvent(ev);
-      }
-    } else if (p.method === "sendPayload") {
-      var pl = p.args[0];
-      if (pl && pl.type === "text" && pl.text) {
-        window.botpress.sendMessage(pl.text);
-      } else {
-        window.botpress.sendEvent(pl);
-      }
-    } else if (p.method === "mergeConfig") {
-      var c = p.args[0];
-      if (c && typeof c === "object" && !c.configuration) {
-        window.botpress.config({ configuration: c });
-      } else {
-        window.botpress.config(c);
-      }
-    }
-  } catch (e) {}
-})();
-true;
-`;
-    webref.current.injectJavaScript(run);
-  };
-
-  useImperativeHandle(ref, () => ({
-    sendEvent: (event) => {
-      invokeBotpressMethod("sendEvent", event);
-    },
-    sendPayload: (payload) => {
-      invokeBotpressMethod("sendPayload", payload);
-    },
-    mergeConfig: (config) => {
-      invokeBotpressMethod("mergeConfig", config);
-    },
-  }));
 
   return (
     <WebView
@@ -150,6 +98,4 @@ true;
       originWhitelist={["*"]}
     />
   );
-});
-
-export default BpWidget;
+}

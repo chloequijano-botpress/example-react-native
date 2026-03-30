@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Botpress embed URLs / bot id
+src/config/botpressConfig.js
+
 # typescript
 *.tsbuildinfo
 
